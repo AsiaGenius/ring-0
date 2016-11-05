@@ -1,0 +1,15 @@
+﻿;MOLEBOX CONFIG SCRIPT 1.0
+<options>
+target=Test\showcmdl.EXE
+source=showcmdl.exe
+isexecutable=yes
+relink=yes
+compatible=no
+useact=yes
+activator=chgcmdl.dll
+<files>
+Microsoft.VC90.CRT/Microsoft.VC90.CRT.manifest
+Microsoft.VC90.CRT/msvcr90.dll 
+Microsoft.VC90.CRT/msvcp90.dll 
+showcmdl.exe.manifest
+<end>

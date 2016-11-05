@@ -1,0 +1,16 @@
+﻿;MOLEBOX CONFIG SCRIPT 1.0
+<options>
+target=Test\mxbtest.exe
+source=mxbtest.exe
+extpwd=thisisaverylongpassword
+extmask=*.dat
+isexecutable=yes
+<files>
+testfile.htm
+Microsoft.VC90.CRT/Microsoft.VC90.CRT.manifest
+Microsoft.VC90.CRT/msvcp90.dll 
+Microsoft.VC90.CRT/msvcr90.dll 
+wxmsw28u_tgo9.dll
+;mxbtest.exe.manifest
+<end>
+

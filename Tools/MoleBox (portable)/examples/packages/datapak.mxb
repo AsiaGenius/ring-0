@@ -1,0 +1,9 @@
+﻿;MOLEBOX CONFIG SCRIPT 1.0
+<options>
+target=Test\mxbtest.dat
+pkgpwd=thisisaverylongpassword
+isexecutable=no
+<files>
+testfile1.htm;testfile.htm
+<end>
+
