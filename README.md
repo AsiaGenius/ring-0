@@ -29,4 +29,6 @@ Acess all guides: https://www.ringsec.net/community
 
 Acess all support channel: https://www.ringsec.net/SP
 
+Enjoy!
+
 Done? Okay. :)
