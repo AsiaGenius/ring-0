@@ -1,0 +1,15 @@
+1 - Open your CMD;
+http://prntscr.com/d9kz9d
+
+2 - Go to ring_tools.exe folder;
+http://prntscr.com/d9l04z
+
+
+3 - Insert command: 
+
+ring_tools
+
+http://prntscr.com/d9l0jq
+
+
+Select option and enjoy!
