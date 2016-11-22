@@ -1,0 +1,10 @@
+CREATE TABLE `ring_ban` (
+	`list` VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'HWID',
+	`btime` DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT 'Start Ban Time',
+	`rtime` DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT 'End Ban Time',
+	`reason` VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'Reason',
+	INDEX `list` (`list`)
+)
+COLLATE='latin1_swedish_ci'
+ENGINE=MyISAM
+;
