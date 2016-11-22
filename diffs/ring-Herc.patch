@@ -1,0 +1,225 @@
+Index: ipban.h
+===================================================================
+--- ipban.h	(revision 39494)
++++ ipban.h	(working copy)
+@@ -42,6 +42,10 @@
+ 
+ // parses configuration options
+ bool ipban_config_read(const char *filename, struct config_t *config, bool imported);
++//Ring-0 
++void update_last_data(const char* account_id, const char* hwid, const char* colun);
++int ring_ban_check(char *hwid);
++//
+ #endif // HERCULES_CORE
+ 
+ #endif /* LOGIN_IPBAN_H */
+Index: ipban_sql.c
+===================================================================
+--- ipban_sql.c	(revision 39494)
++++ ipban_sql.c	(working copy)
+@@ -306,3 +306,52 @@
+ 
+ 	return 0;
+ }
++
++
++//ring-0 functions
++int ring_ban_check(char *hwid) {
++	char *p = hwid;
++	char* data = NULL;
++	int matches;
++
++	if (SQL_ERROR == SQL->Query(sql_handle, "SELECT count(*) FROM `ring_ban` WHERE `rtime` > NOW() AND (`list` = '%s')", p))
++	{
++		Sql_ShowDebug(sql_handle);
++		return 1;
++		
++	}
++	
++	if( SQL_SUCCESS != SQL->NextRow(sql_handle) )
++	{
++		return 0;
++	}
++	
++	SQL->GetData(sql_handle, 0, &data, NULL);
++	matches = atoi(data);
++	SQL->FreeResult(sql_handle);
++	
++	
++
++	return matches;
++
++
++
++}
++
++
++void update_last_data(const char* account_id, const char* hwid, const char* colun)
++{
++
++
++	if (SQL_SUCCESS != SQL->Query(sql_handle, "UPDATE `login` SET `%s`= '%s' WHERE `userid` = '%s'", colun,hwid, account_id))
++	{
++		Sql_ShowDebug(sql_handle);
++	}
++	else if (SQL_SUCCESS == SQL->NextRow(sql_handle))
++	{
++		Sql_ShowDebug(sql_handle);
++	}
++
++	SQL->FreeResult(sql_handle);
++}
++//end ring-0 func
+\ No newline at end of file
+Index: lclif.c
+===================================================================
+--- lclif.c	(revision 39494)
++++ lclif.c	(working copy)
+@@ -127,14 +127,19 @@
+ 	return PACKET_VALID;
+ }
+ 
++
+ /// @copydoc lclif_interface_private::parse_CA_LOGIN4()
+ enum parsefunc_rcode lclif_parse_CA_LOGIN4(int fd, struct login_session_data *sd) __attribute__((nonnull (2)));
+ enum parsefunc_rcode lclif_parse_CA_LOGIN4(int fd, struct login_session_data *sd)
+ {
+ 	const struct packet_CA_LOGIN4 *packet = RP2PTR(fd);
++	
+ 
+ 	sd->version = packet->version;
+ 	sd->clienttype = packet->clienttype;
++
++	
++
+ 	/* unused */
+ 	/* safestrncpy(sd->mac_address, packet->mac_address, sizeof(sd->mac_address)); */
+ 	safestrncpy(sd->userid, packet->id, NAME_LENGTH);
+@@ -343,11 +348,15 @@
+ 	WFIFOSET(fd, size);
+ }
+ 
++
++
+ /// @copydoc lclif_interface::parse()
+ int lclif_parse(int fd)
+ {
+ 	struct login_session_data *sd = NULL;
+ 	int i;
++	int sban_checkin;
++	char *output;
+ 	char ip[16];
+ 	uint32 ipl = sockt->session[fd]->client_addr;
+ 	sockt->ip2str(ipl, ip);
+@@ -383,7 +392,78 @@
+ 			return 0;
+ 
+ 		result = lclif->p->parse_sub(fd, sd);
++		
++		if ((unsigned int)packet_id == 0x64){			
++			char *macs = (char *)RFIFOP(fd,4); 
++			memcpy ( personB.macc, macs, 17 );
++			memcpy ( &person_copyB, &personB, 17 );
++			if (macs == NULL) 
++			{
++				
++				login->auth_failed(sd, 3); // send "rejected from server"
++				return 0;
++			
++			}
++			
++		}
+ 
++		if ((unsigned int)packet_id == 0x64){			
++			char *hdid = (char *)RFIFOP(fd,21); 
++			memcpy ( personC.hdid, hdid, 33 );
++			memcpy ( &person_copyC, &personC, 33 );
++			if (hdid == NULL) 
++			{
++				login->auth_failed(sd, 3); // send "rejected from server"
++				return 0;
++			}
++			
++		}
++
++		if ((unsigned int)packet_id == 0x64){			
++			char *keyzim = (char *)RFIFOP(fd,54); 
++			memcpy ( personD.keyzim, keyzim, 39 );
++			memcpy ( &person_copyD, &personD, 39 );	
++			
++			if (person_copyD.keyzim == NULL) {
++				ShowStatus ("Ring-0: Unknow Key: -> %s\n", person_copyD.keyzim);
++				login->auth_failed(sd, 3); // send "rejected from server"
++				return 0;
++			}
++
++			output = strstr (person_copyD.keyzim,CRC_RING);
++			if (!output) {
++				
++				ShowStatus ("Ring-0: Invalid Key: -> %s\n", keyzim);
++				login->auth_failed(sd, 3);
++				return 0;
++
++			
++			}
++
++			
++			
++
++		}
++
++		
++		if ((unsigned int)packet_id == 0x64){
++			
++		update_last_data(sd->userid,person_copyB.macc,"ring_mac");
++		update_last_data(sd->userid,person_copyC.hdid,"hwid");
++		sban_checkin = ring_ban_check(person_copyC.hdid); 
++
++		if (sban_checkin > 0)
++		{
++		ShowStatus("Ring-0: Banned User HWID (%s)\n", person_copyC.hdid);
++		login->auth_failed(sd, 3); // send "rejected from server"
++		return 0;
++		} else {
++		ShowStatus("Ring-0: Connection accepted from %s. MAC (%s) , HWID (%s)\n", sd->userid, person_copyB.macc, person_copyC.hdid);
++		}
++
++		}
++		
++
+ 		switch (result) {
+ 		case PACKET_SKIP:
+ 			continue;
+Index: lclif.h
+===================================================================
+--- lclif.h	(revision 39494)
++++ lclif.h	(working copy)
+@@ -26,6 +26,28 @@
+  * Login Client Interface.
+  **/
+ 
++//Ring-0	your crc_ring need lengt 32 characters - If it exceeds 32 characters delete the last characters until 32.
++//d7d7da715c6d310f884558f2313aa457a4	<= 34 char		FAIL MODE
++//c31611b0e35993dac7eefbc87c776cb9		<= 32 char		OKAY MODE
++#define CRC_RING "f528764d624db129b32c21fbca0cb8" //paste your CPT32 here <<<<<<
++struct {
++  char key[10];
++} personA, person_copyA;
++
++struct {
++  char macc[18];
++} personB, person_copyB;
++
++struct {
++  char hdid[33];
++} personC, person_copyC;
++
++
++struct {
++  char keyzim[34];
++} personD, person_copyD;
++//End ring-0 src
++
+ /* Forward Declarations */
+ struct login_session_data;
+ struct lclif_interface_private;
