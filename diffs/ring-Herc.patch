@@ -190,6 +190,15 @@ Index: lclif.c
  		switch (result) {
  		case PACKET_SKIP:
  			continue;
+@@ -391,7 +471,7 @@
+ 		case PACKET_STOPPARSE:
+ 			return 0;
+ 		case PACKET_UNKNOWN:
+-			ShowWarning("lclif_parse: Received unsupported packet (packet 0x%04x, %d bytes received), disconnecting session #%d.\n", (unsigned int)packet_id, packet_len, fd);
++			//ShowWarning("lclif_parse: Received unsupported packet (packet 0x%04x, %d bytes received), disconnecting session #%d.\n", (unsigned int)packet_id, packet_len, fd);
+ #ifdef DUMP_INVALID_PACKET
+ 			ShowDump(RFIFOP(fd, 0), RFIFOREST(fd));
+ #endif
 Index: lclif.h
 ===================================================================
 --- lclif.h	(revision 39494)
