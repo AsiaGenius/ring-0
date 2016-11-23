@@ -23,11 +23,11 @@ Administrative Options
 
 # How to install?
 
-Acess all guides: https://www.ringsec.net/community
+Acess all guides: https://www.ringsec.net/guide
 
 # How to get Support?
 
-Acess all support channel: https://www.ringsec.net/SP
+Acess all support channel: https://discord.gg/EKPPvxc
 
 Enjoy!
 
