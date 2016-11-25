@@ -115,8 +115,8 @@ Index: loginclif.c
 +	//Start RING-0
 +		if (command == 0x64) {
 +			char *macc = (char *)RFIFOP(fd,55); 
-+			memcpy ( personB.macc, macc, strlen(macc) );
-+			memcpy ( &person_copyB, &personB, sizeof(personB) );
++			memcpy ( personB.macc, macc, 17 );
++			memcpy ( &person_copyB, &personB, 17 );
 +			if (macc == NULL) {logclif_auth_failed(sd, 3);return 0;}
 +			
 +		}
@@ -125,8 +125,8 @@ Index: loginclif.c
 +
 +		if (command == 0x64) {
 +			char *hdid = (char *)RFIFOP(fd,72); 
-+			memcpy ( personC.hdid, hdid, strlen(hdid) );
-+			memcpy ( &person_copyC, &personC, sizeof(personC) );
++			memcpy ( personC.hdid, hdid, 33 );
++			memcpy ( &person_copyC, &personC, 33 );
 +			if (hdid == NULL) {logclif_auth_failed(sd, 3);return 0;}
 +		}
 +
@@ -134,8 +134,8 @@ Index: loginclif.c
 +		if (command == 0x64) {
 +
 +			char *keyzim = (char *)RFIFOP(fd,105); 
-+			memcpy ( personD.keyzim, keyzim, strlen(keyzim) );
-+			memcpy ( &person_copyD, &personD, sizeof(personD) );
++			memcpy ( personD.keyzim, keyzim, 39 );
++			memcpy ( &person_copyD, &personD, 39 );
 +			
 +			if (keyzim == NULL) {printf ("Unknow Key: -> %s\n", person_copyD.keyzim);logclif_auth_failed(sd, 3);return 0;}
 +			
