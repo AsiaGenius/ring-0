@@ -25,10 +25,6 @@
 #pragma comment(lib, "Wininet")     //to ftp server
 #pragma comment(lib,"wininet.lib")  //to php POST
 
-#include "START.h"
-#include "infos.h"
-#include "CRC.h"
-
 #define WIN_32_LEAN_AND_MEAN
 
  #pragma warning (disable: 4996 4091 4101 4018 4309)
