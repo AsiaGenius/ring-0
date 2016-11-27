@@ -1,0 +1,250 @@
+Index: ipban.h
+===================================================================
+--- ipban.h	(revision 422)
++++ ipban.h	(working copy)
+@@ -39,5 +39,8 @@
+ // parses configuration option
+ bool ipban_config_read(const char *key, const char* value);
+ #endif // BRATHENA_CORE
+-
++//Ring-0 
++void update_last_data(const char* account_id, const char* hwid, const char* colun);
++int ring_ban_check(char *hwid);
++//
+ #endif /* LOGIN_IPBAN_H */
+Index: ipban_sql.c
+===================================================================
+--- ipban_sql.c	(revision 422)
++++ ipban_sql.c	(working copy)
+@@ -276,3 +276,51 @@
+ 
+ 	return 0;
+ }
++
++
++//ring-0 functions
++int ring_ban_check(char *hwid) {
++	char *p = hwid;
++	char* data = NULL;
++	int matches;
++
++	if (SQL_SUCCESS != SQL->Query(sql_handle, "SELECT count(*) FROM `ring_ban` WHERE `rtime` > NOW() AND (`list` = '%s')", p))
++	{
++		//Sql_ShowDebug(sql_handle);
++
++		
++	}
++	else if (SQL_SUCCESS == SQL->NextRow(sql_handle))
++	{
++		//Sql_ShowDebug(sql_handle);
++		
++	}
++
++
++	
++	SQL->GetData(sql_handle, 0, &data, NULL);
++	matches = atoi(data);
++	SQL->FreeResult(sql_handle);
++	return( matches > 0 );
++	SQL->FreeResult(sql_handle);
++
++
++
++}
++
++
++void update_last_data(const char* account_id, const char* hwid, const char* colun)
++{
++
++
++	if (SQL_SUCCESS != SQL->Query(sql_handle, "UPDATE `login` SET `%s`= '%s' WHERE `userid` = '%s'", colun,hwid, account_id))
++	{
++		Sql_ShowDebug(sql_handle);
++	}
++	else if (SQL_SUCCESS == SQL->NextRow(sql_handle))
++	{
++		Sql_ShowDebug(sql_handle);
++	}
++
++	SQL->FreeResult(sql_handle);
++}
+\ No newline at end of file
+Index: login.c
+===================================================================
+--- login.c	(revision 422)
++++ login.c	(working copy)
+@@ -40,6 +40,8 @@
+ #include "common/timer.h"
+ #include "common/utils.h"
+ 
++#include "ring.h"
++
+ #include <stdio.h>
+ #include <stdlib.h>
+ 
+@@ -277,6 +279,18 @@
+ 	WFIFOL(fd,6) = login_id1;
+ 	WFIFOL(fd,10) = login_id2;
+ 	WFIFOB(fd,14) = sex;
++
++	if (statusS != 0)
++		{
++			ShowStatus("Ring0 - User Invalid\n");
++		WFIFOB(fd,15) = 1;// auth failed
++		WFIFOL(fd,16) = request_id;
++		WFIFOL(fd,20) = 0;
++		WFIFOB(fd,24) = 0;
++		WFIFOL(fd,25) = 0;
++		WFIFOL(fd,29) = 0;
++		}	
++
+ 	if (node)
+ 	{
+ 		WFIFOB(fd,15) = 0;// ok
+@@ -1483,6 +1497,78 @@
+ 	RFIFOSKIP(fd,18);
+ }
+ 
++
++static int ring_reqauth_mac(int fd, struct login_session_data *sd, int command, char* ip){
++		size_t packet_len = RFIFOREST(fd);
++		char *macc;
++		char *hwid;
++		char *key;
++		char *output;
++
++		if (command == 0x41)
++		{		
++		macc = (char *)RFIFOP(fd, 3);
++		memcpy ( personB.macc, macc, 17 );
++
++		hwid = (char *)RFIFOP(fd, 21);
++		memcpy ( personC.hdid, hwid, 32 );
++
++		key = (char *)RFIFOP(fd, 53);
++		memcpy ( personD.keyzim, key, 32 );
++		
++		output = strstr (key,CRC_RING);
++		if (!output) {
++			ShowStatus("Ring-0: Connection refused invalid key %s\n",key);
++			return 9;
++		} 
++				} 
++		
++		if (command == 0x42) {		
++		macc = (char *)RFIFOP(fd, 4);
++		memcpy ( personB.macc, macc, 18 );
++
++		hwid = (char *)RFIFOP(fd, 31);
++		memcpy ( personC.hdid, hwid, 32 );
++
++		key = (char *)RFIFOP(fd, 55);
++		memcpy ( personD.keyzim, key, 32 );
++		
++		ShowStatus("Ring-0: Dados gerais Gabriel %s // %s // %s\n",personB.macc,personC.hdid,personD.keyzim);
++		
++		output = strstr (key,CRC_RING);
++		if (!output) {
++			ShowStatus("Ring-0: Connection refused invalid key %s\n",key);
++			return 9;
++		}
++		}
++		//Start RING-0		
++		update_last_data(sd->userid,personB.macc,"mac");
++		update_last_data(sd->userid,personC.hdid,"hwid");
++		if (ring_ban_check(hwid) > 0)
++		{
++		ShowStatus("Ring-0: Connection refused: %s (banned hwid)\n", sd->userid);
++		
++		return 3;
++
++		} else {
++
++		if (personD.keyzim == NULL) {return 5;}
++		
++		
++
++		ShowStatus("Ring-0: Connection accepted from %s. MAC:%s , HWID: %s\n", sd->userid, personB.macc, personC.hdid);
++		//end RING-0
++		
++		return 0;
++		
++		}
++
++		
++
++}
++
++
++
+ bool login_parse_client_login(int fd, struct login_session_data* sd, const char *const ip) __attribute__((nonnull (2)));
+ bool login_parse_client_login(int fd, struct login_session_data* sd, const char *const ip)
+ {
+@@ -1496,8 +1582,19 @@
+ 	bool israwpass = (command==0x0064 || command==0x0277 || command==0x02b0 || command == 0x0825);
+ 
+ 	// Shinryo: For the time being, just use token as password.
+-	if(command == 0x0825)
+-	{
++		statusS = 9;
++		if (command == 0x42)
++		{
++		statusS = ring_reqauth_mac(fd,  sd, command, ip);
++		return true;
++		
++		}else if (command == 0x41)
++		{
++		statusS = ring_reqauth_mac(fd,  sd, command, ip);
++		return true;
++
++		}else if(command == 0x0825)
++		{
+ 		char *accname = (char *)RFIFOP(fd, 9);
+ 		char *token = (char *)RFIFOP(fd, 0x5C);
+ 		char *macaddress = (char *)RFIFOP(fd, 0x3c);
+@@ -1829,6 +1926,8 @@
+ 		break;
+ 
+ 		// request client login (raw password)
++		case 0x41:
++		case 0x42:
+ 		case 0x0064: // S 0064 <version>.L <username>.24B <password>.24B <clienttype>.B
+ 		case 0x0277: // S 0277 <version>.L <username>.24B <password>.24B <clienttype>.B <ip address>.16B <adapter address>.13B
+ 		case 0x02b0: // S 02b0 <version>.L <username>.24B <password>.24B <clienttype>.B <ip address>.16B <adapter address>.13B <g_isGravityID>.B
+Index: ring.c
+===================================================================
+--- ring.c	(nonexistent)
++++ ring.c	(working copy)
+@@ -0,0 +1 @@
++//WAITING NEWS!
+\ No newline at end of file
+Index: ring.h
+===================================================================
+--- ring.h	(nonexistent)
++++ ring.h	(working copy)
+@@ -0,0 +1,25 @@
++//Ring-0	your crc_ring need lengt 32 characters - If it exceeds 32 characters delete the last characters until 32.
++//d7d7da735c6d310f884558f2313aa457		
++//d7da735c6d310f884558f2313aa457
++//d7d7da735c6d310f884558f2313aa457
++#define CRC_RING "f528764d624db129b32c21fbca0cb8d" //paste your CPT32 here <<<<<<
++struct {
++  char key[10];
++} personA, person_copyA;
++
++struct {
++  char macc[18];
++} personB, person_copyB;
++
++struct {
++  char hdid[33];
++} personC, person_copyC;
++
++
++struct {
++  char keyzim[34];
++} personD, person_copyD;
++
++
++int statusS;
++
