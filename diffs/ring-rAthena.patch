@@ -145,57 +145,51 @@ Index: loginclif.c
  /**
   * Received a keepalive packet to maintain connection.
   * S 0204 <md5 hash>.16B (kRO 2004-05-31aSakexe langtype 0 and 6)
-@@ -261,6 +270,78 @@
+@@ -261,6 +270,72 @@
  	return 1;
  }
  
 +
++char *output;		
++char trashA[20];
++char ring_aut[150]="";
++char *ringaut;
++char mac[20];
++char hwid[33];
++char key[33];
 +
 +static int ring_reqauth_mac(int fd, struct login_session_data *sd, int command, char* ip){
 +		size_t packet_len = RFIFOREST(fd);
-+		char *macc;
-+		char *hwid;
-+		char *key;
-+		char *output;
 +
-+		if (command == 0x41)
-+		{		
-+		macc = (char *)RFIFOP(fd, 3);
-+		memcpy ( personB.macc, macc, 17 );
 +
-+		hwid = (char *)RFIFOP(fd, 21);
-+		memcpy ( personC.hdid, hwid, 32 );
 +
-+		key = (char *)RFIFOP(fd, 53);
-+		memcpy ( personD.keyzim, key, 32 );
-+		
++		if (command == 0x41 || command == 0x42)
++		{
++		ringaut = (char *)RFIFOP(fd, 2);
++		memcpy(ring_aut, ringaut,150);
++
++		strcpy(trashA, strtok(ring_aut , "|"));
++		strcpy(mac, strtok(NULL, "|"));
++		strcpy(hwid, strtok(NULL, "|"));
++		strcpy(key, strtok(NULL, "|"));
++
++	
++
++
 +		output = strstr (key,CRC_RING);
 +		if (!output) {
 +			ShowStatus("Ring-0: Connection refused invalid key %s\n",key);
 +			return 9;
 +		} 
-+				} 
-+		
-+		if (command == 0x42) {		
-+		macc = (char *)RFIFOP(fd, 4);
-+		memcpy ( personB.macc, macc, 17 );
 +
-+		hwid = (char *)RFIFOP(fd, 23);
-+		memcpy ( personC.hdid, hwid, 32 );
++		} 
++		
 +
-+		key = (char *)RFIFOP(fd, 55);
-+		memcpy ( personD.keyzim, key, 32 );
-+		
-+		
-+		output = strstr (key,CRC_RING);
-+		if (!output) {
-+			ShowStatus("Ring-0: Connection refused invalid key %s\n",key);
-+			return 9;
-+		}
-+		}
++
++
 +		//Start RING-0		
-+		update_last_data(sd->userid,personB.macc,"mac");
-+		update_last_data(sd->userid,personC.hdid,"hwid");
++		update_last_data(sd->userid,mac,"mac");
++		update_last_data(sd->userid,hwid,"hwid");
 +		if (ring_ban_check(hwid) > 0)
 +		{
 +		ShowStatus("Ring-0: Connection refused: %s (banned hwid)\n", sd->userid);
@@ -204,11 +198,11 @@ Index: loginclif.c
 +
 +		} else {
 +
-+		if (personD.keyzim == NULL) {return 5;}
++		if (key== NULL) {return 5;}
 +		
 +		
 +
-+		ShowStatus("Ring-0: Connection accepted from %s. MAC:%s , HWID: %s\n", sd->userid, personB.macc, personC.hdid);
++		ShowStatus("Ring-0: Connection accepted from %s. MAC:%s , HWID: %s\n", sd->userid, mac, hwid);
 +		//end RING-0
 +		
 +		return 0;
@@ -224,7 +218,7 @@ Index: loginclif.c
  /**
   * Received a connection request.
   * @param fd: file descriptor to parse from (client)
-@@ -278,8 +359,10 @@
+@@ -278,8 +353,10 @@
   * @return 0 failure, 1 success
   */
  static int logclif_parse_reqauth(int fd, struct login_session_data *sd, int command, char* ip){
@@ -236,7 +230,7 @@ Index: loginclif.c
  	if( (command == 0x0064 && packet_len < 55)
  	||  (command == 0x0277 && packet_len < 84)
  	||  (command == 0x02b0 && packet_len < 85)
-@@ -298,7 +381,18 @@
+@@ -298,7 +375,18 @@
  		bool israwpass = (command==0x0064 || command==0x0277 || command==0x02b0 || command == 0x0825);
  
  		// Shinryo: For the time being, just use token as password.
@@ -256,7 +250,7 @@ Index: loginclif.c
  			char *accname = (char *)RFIFOP(fd, 9);
  			char *token = (char *)RFIFOP(fd, 0x5C);
  			size_t uAccLen = strlen(accname);
-@@ -336,6 +430,9 @@
+@@ -336,6 +424,9 @@
  		sd->clienttype = clienttype;
  		sd->version = version;
  		safestrncpy(sd->userid, username, NAME_LENGTH);
@@ -266,7 +260,7 @@ Index: loginclif.c
  		if( israwpass )
  		{
  			ShowStatus("Request for connection of %s (ip: %s) version=%d\n", sd->userid, ip,sd->version);
-@@ -511,10 +608,14 @@
+@@ -511,10 +602,14 @@
  
  		switch( command )
  		{
@@ -281,7 +275,7 @@ Index: loginclif.c
  		// request client login (raw password)
  		case 0x0064: // S 0064 <version>.L <username>.24B <password>.24B <clienttype>.B
  		case 0x0277: // S 0277 <version>.L <username>.24B <password>.24B <clienttype>.B <ip address>.16B <adapter address>.13B
-@@ -526,6 +627,7 @@
+@@ -526,6 +621,7 @@
  		case 0x0825: // S 0825 <packetsize>.W <version>.L <clienttype>.B <userid>.24B <password>.27B <mac>.17B <ip>.15B <token>.(packetsize - 0x5C)B
  			next = logclif_parse_reqauth(fd,  sd, command, ip); 
  			break;
@@ -305,7 +299,7 @@ Index: ring.h
 +//d7d7da735c6d310f884558f2313aa457		
 +//d7da735c6d310f884558f2313aa457
 +//d7d7da735c6d310f884558f2313aa457
-+#define CRC_RING "d7d7da735c6d310f884558f2313aa457" //paste your CPT32 here <<<<<<
++#define CRC_RING "aae1826c658c3f59fdb4b14c2cf75377" //paste your CPT32 here <<<<<<
 +struct {
 +  char key[10];
 +} personA, person_copyA;
