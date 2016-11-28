@@ -23,6 +23,13 @@ Administrative Options
 
 # How to install?
 
+Part 1/4 Mysql Install : https://www.youtube.com/watch?v=AhuyBS6DfPE
+Part 2/4 Emu Diff : https://www.youtube.com/watch?v=NbofJJel6os
+Part 3/4 Client Install: https://www.youtube.com/watch?v=010y_r4Gadc
+Part 4/4 Key Generator: https://www.youtube.com/watch?v=tOTLyHrcL0E
+
+Done!
+
 Acess all guides: https://www.ringsec.net/guide
 
 # How to get Support?
