@@ -17,5 +17,6 @@ public:
 	char* ProtectI;
 	char* ProtectJ;
 
+
 };
 extern CARREGAR carrega;

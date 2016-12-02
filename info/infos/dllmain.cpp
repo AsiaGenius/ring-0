@@ -20,7 +20,7 @@ void loadConf()
 //////////////////////////////////////////////////////////////////////////
 
 carrega.UserIP = "127.0.0.1";	//you server IP
-carrega.UserHex =  "my_ro.exe";	//hexed name
+carrega.UserHex =  "my-RO.exe";	//hexed name
 carrega.MaxAllowedInstances =  2;	//Number of max game client, MAX: 99 (Recomended: 2)
 
 //////////////////////////////////////////////////////////////////////////
@@ -28,23 +28,26 @@ carrega.MaxAllowedInstances =  2;	//Number of max game client, MAX: 99 (Recomend
 //////////////////////////////////////////////////////////////////////////
 
 //List here all protected files, eg.: #define ProtectA "my_CRC:filename"
-//Max number of protect file is 10
+//Max number of protect file is 5
 //All file type allowed
 
-carrega.NumberOfPrt = 1;		//Number  of protected files Default: 3 (only 3 file protected in this case)	//DISABLED TEMPORARY
+carrega.NumberOfPrt = 4;		//Number  of protected files 
 
-carrega.ProtectA = "0x5339965e:data.grf";	//DISABLED TEMPORARY
-carrega.ProtectB =  "0x5339965e:my_ro.exe";	//DISABLED TEMPORARY
-carrega.ProtectC = "0x5339965e:my_ro.grf";	//DISABLED TEMPORARY
-carrega.ProtectD = "0x5339965e:DATA.INI";	//DISABLED TEMPORARY
-carrega.ProtectE = "0x5339965e:files.grf";	//DISABLED TEMPORARY
-carrega.ProtectF = "0x5339965e:palleta.grf";	//DISABLED TEMPORARY
-carrega.ProtectG = "0x5339965e:jobs.grf";	//DISABLED TEMPORARY
-carrega.ProtectH = "0x5339965e:cps.dll";	//DISABLED TEMPORARY
-carrega.ProtectI = "0x5339965e:GameGuard/ring.dll";		//    <<<---  IMPORTANT!!!!! IMPORTANT!!!!!!!!! ATTENTION!!!  GameGuard/ring.dll
-carrega.ProtectJ = "0x5339965e:BGM/1.mp3";	//DISABLED TEMPORARY
+carrega.ProtectA = "de140b0ff23168b45e8867b058bac31c";	//CRIPTO COD
+carrega.ProtectB = "clientinfo.grf";	//FILE NAME
 
-//Attention! Max 10 protected file allowed, if you dont need protect 10 files, set NumberOfPrt to you number of protected file
+carrega.ProtectC = "48c5c6bf2f6ab3d0054738dc30179193";	//CRIPTO COD
+carrega.ProtectD = "new.grf";	//FILE NAME
+
+carrega.ProtectE = "e3aa7d74d98b55382b2da31bdb19eae1";	//CRIPTO COD
+carrega.ProtectF = "palette.grf";	//FILE NAME
+
+carrega.ProtectG = "666db5146a5ae14f7c21293e17da573f";	//CRIPTO COD
+carrega.ProtectH = "my-RO.exe";	//FILE NAME
+
+
+
+//Attention! Max 5 protected file allowed, if you dont need protect > 5 files, set NumberOfPrt to you number of protected file
 
 
 }
@@ -75,6 +78,11 @@ __declspec(dllexport) int client()
 __declspec(dllexport) int getinst()
 {	loadConf();
 	return carrega.MaxAllowedInstances;
+}
+
+__declspec(dllexport) int getprt()
+{	loadConf();
+	return carrega.NumberOfPrt;
 }
 __declspec(dllexport) char* CRCGRF(int type)
 {
