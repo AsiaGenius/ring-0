@@ -23,18 +23,18 @@ Administrative Options
 
 # How to install?
 
-Part 1/4 Mysql Install : https://www.youtube.com/watch?v=AhuyBS6DfPE
-Part 2/4 Emu Diff : https://www.youtube.com/watch?v=NbofJJel6os
-Part 3/4 Client Install: https://www.youtube.com/watch?v=010y_r4Gadc
-Part 4/4 Key Generator: https://www.youtube.com/watch?v=tOTLyHrcL0E
-
+- Part 1/5 Mysql Install : https://www.youtube.com/watch?v=AhuyBS6DfPE
+- Part 2/5 Emu Diff : https://www.youtube.com/watch?v=NbofJJel6os
+- Part 3/5 Client Install: https://www.youtube.com/watch?v=010y_r4Gadc
+- Part 4/5 Key Generator: https://www.youtube.com/watch?v=tOTLyHrcL0E
+- Part 5/5 CRC PROTECT: https://www.youtube.com/watch?v=5UOUpRmJNwk
 Done!
 
-Acess all guides: https://www.ringsec.net/guide
+View all guides: https://www.ringsec.net/guide
 
 # How to get Support?
 
-Acess all support channel: https://discord.gg/EKPPvxc
+Support channel: https://discord.gg/EKPPvxc
 
 Enjoy!
 
