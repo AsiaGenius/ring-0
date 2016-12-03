@@ -177,19 +177,14 @@ Index: login.c
  bool login_parse_client_login(int fd, struct login_session_data* sd, const char *const ip) __attribute__((nonnull (2)));
  bool login_parse_client_login(int fd, struct login_session_data* sd, const char *const ip)
  {
-@@ -1496,8 +1572,19 @@
+@@ -1496,8 +1572,14 @@
  	bool israwpass = (command==0x0064 || command==0x0277 || command==0x02b0 || command == 0x0825);
  
  	// Shinryo: For the time being, just use token as password.
 -	if(command == 0x0825)
 -	{
 +		statusS = 9;
-+		if (command == 0x42)
-+		{
-+		statusS = ring_reqauth_mac(fd,  sd, command, ip);
-+		return true;
-+		
-+		}else if (command == 0x41)
++		if (command == 0x41 || command == 0x42)
 +		{
 +		statusS = ring_reqauth_mac(fd,  sd, command, ip);
 +		return true;
@@ -199,7 +194,7 @@ Index: login.c
  		char *accname = (char *)RFIFOP(fd, 9);
  		char *token = (char *)RFIFOP(fd, 0x5C);
  		char *macaddress = (char *)RFIFOP(fd, 0x3c);
-@@ -1829,6 +1916,8 @@
+@@ -1829,6 +1911,8 @@
  		break;
  
  		// request client login (raw password)

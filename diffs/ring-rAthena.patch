@@ -229,19 +229,15 @@ Index: loginclif.c
  	if( (command == 0x0064 && packet_len < 55)
  	||  (command == 0x0277 && packet_len < 84)
  	||  (command == 0x02b0 && packet_len < 85)
-@@ -298,7 +374,18 @@
+@@ -298,7 +374,14 @@
  		bool israwpass = (command==0x0064 || command==0x0277 || command==0x02b0 || command == 0x0825);
  
  		// Shinryo: For the time being, just use token as password.
 -		if(command == 0x0825) {
 +		statusS = 9;
-+		if (command == 0x42)
++		if (command == 0x41 || command == 0x42 && packet_len > 100)
 +		{
-+		statusS = ring_reqauth_mac(fd,  sd, command, ip);
-+		return 0;
 +		
-+		}else if (command == 0x41)
-+		{
 +		statusS = ring_reqauth_mac(fd,  sd, command, ip);
 +		return 0;
 +
@@ -249,7 +245,7 @@ Index: loginclif.c
  			char *accname = (char *)RFIFOP(fd, 9);
  			char *token = (char *)RFIFOP(fd, 0x5C);
  			size_t uAccLen = strlen(accname);
-@@ -336,6 +423,9 @@
+@@ -336,6 +419,9 @@
  		sd->clienttype = clienttype;
  		sd->version = version;
  		safestrncpy(sd->userid, username, NAME_LENGTH);
@@ -259,7 +255,7 @@ Index: loginclif.c
  		if( israwpass )
  		{
  			ShowStatus("Request for connection of %s (ip: %s) version=%d\n", sd->userid, ip,sd->version);
-@@ -511,10 +601,14 @@
+@@ -511,10 +597,14 @@
  
  		switch( command )
  		{
@@ -274,7 +270,7 @@ Index: loginclif.c
  		// request client login (raw password)
  		case 0x0064: // S 0064 <version>.L <username>.24B <password>.24B <clienttype>.B
  		case 0x0277: // S 0277 <version>.L <username>.24B <password>.24B <clienttype>.B <ip address>.16B <adapter address>.13B
-@@ -526,6 +620,7 @@
+@@ -526,6 +616,7 @@
  		case 0x0825: // S 0825 <packetsize>.W <version>.L <clienttype>.B <userid>.24B <password>.27B <mac>.17B <ip>.15B <token>.(packetsize - 0x5C)B
  			next = logclif_parse_reqauth(fd,  sd, command, ip); 
  			break;
