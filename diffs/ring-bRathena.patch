@@ -111,7 +111,7 @@ Index: login.c
  	memcpy(WFIFOP(fd,33), mac_address, MAC_LENGTH);
  	WFIFOSET(fd,33 + MAC_LENGTH);
  }
-@@ -1483,6 +1500,72 @@
+@@ -1483,6 +1500,65 @@
  	RFIFOSKIP(fd,18);
  }
  
@@ -132,14 +132,12 @@ Index: login.c
 +		if (command == 0x41 || command == 0x42)
 +		{
 +		ringaut = (char *)RFIFOP(fd, 2);
-+		memcpy(ring_aut, ringaut,150);
 +
-+		strcpy(trashA, strtok(ring_aut , "|"));
++
++		strcpy(trashA, strtok(ringaut , "|"));
 +		strcpy(macS, strtok(NULL, "|"));
 +		strcpy(hwid, strtok(NULL, "|"));
-+		strcpy(key, strtok(NULL, "|"));
-+
-+	
++		strcpy(key, strtok(NULL, "|"));	
 +
 +
 +		output = strstr (key,CRC_RING);
@@ -149,9 +147,6 @@ Index: login.c
 +		} 
 +
 +		} 
-+		
-+
-+
 +
 +		//Start RING-0		
 +		update_last_data(sd->userid,macS,"mac");
@@ -173,9 +168,7 @@ Index: login.c
 +		
 +		return 0;
 +		
-+		}
-+
-+		
++		}	
 +
 +}
 +
@@ -184,7 +177,7 @@ Index: login.c
  bool login_parse_client_login(int fd, struct login_session_data* sd, const char *const ip) __attribute__((nonnull (2)));
  bool login_parse_client_login(int fd, struct login_session_data* sd, const char *const ip)
  {
-@@ -1496,8 +1579,19 @@
+@@ -1496,8 +1572,19 @@
  	bool israwpass = (command==0x0064 || command==0x0277 || command==0x02b0 || command == 0x0825);
  
  	// Shinryo: For the time being, just use token as password.
@@ -206,7 +199,7 @@ Index: login.c
  		char *accname = (char *)RFIFOP(fd, 9);
  		char *token = (char *)RFIFOP(fd, 0x5C);
  		char *macaddress = (char *)RFIFOP(fd, 0x3c);
-@@ -1829,6 +1923,8 @@
+@@ -1829,6 +1916,8 @@
  		break;
  
  		// request client login (raw password)
