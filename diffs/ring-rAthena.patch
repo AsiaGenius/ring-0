@@ -145,7 +145,7 @@ Index: loginclif.c
  /**
   * Received a keepalive packet to maintain connection.
   * S 0204 <md5 hash>.16B (kRO 2004-05-31aSakexe langtype 0 and 6)
-@@ -261,6 +270,72 @@
+@@ -261,6 +270,71 @@
  	return 1;
  }
  
@@ -166,9 +166,8 @@ Index: loginclif.c
 +		if (command == 0x41 || command == 0x42)
 +		{
 +		ringaut = (char *)RFIFOP(fd, 2);
-+		memcpy(ring_aut, ringaut,150);
 +
-+		strcpy(trashA, strtok(ring_aut , "|"));
++		strcpy(trashA, strtok(ringaut , "|"));
 +		strcpy(mac, strtok(NULL, "|"));
 +		strcpy(hwid, strtok(NULL, "|"));
 +		strcpy(key, strtok(NULL, "|"));
@@ -218,7 +217,7 @@ Index: loginclif.c
  /**
   * Received a connection request.
   * @param fd: file descriptor to parse from (client)
-@@ -278,8 +353,10 @@
+@@ -278,8 +352,10 @@
   * @return 0 failure, 1 success
   */
  static int logclif_parse_reqauth(int fd, struct login_session_data *sd, int command, char* ip){
@@ -230,7 +229,7 @@ Index: loginclif.c
  	if( (command == 0x0064 && packet_len < 55)
  	||  (command == 0x0277 && packet_len < 84)
  	||  (command == 0x02b0 && packet_len < 85)
-@@ -298,7 +375,18 @@
+@@ -298,7 +374,18 @@
  		bool israwpass = (command==0x0064 || command==0x0277 || command==0x02b0 || command == 0x0825);
  
  		// Shinryo: For the time being, just use token as password.
@@ -250,7 +249,7 @@ Index: loginclif.c
  			char *accname = (char *)RFIFOP(fd, 9);
  			char *token = (char *)RFIFOP(fd, 0x5C);
  			size_t uAccLen = strlen(accname);
-@@ -336,6 +424,9 @@
+@@ -336,6 +423,9 @@
  		sd->clienttype = clienttype;
  		sd->version = version;
  		safestrncpy(sd->userid, username, NAME_LENGTH);
@@ -260,7 +259,7 @@ Index: loginclif.c
  		if( israwpass )
  		{
  			ShowStatus("Request for connection of %s (ip: %s) version=%d\n", sd->userid, ip,sd->version);
-@@ -511,10 +602,14 @@
+@@ -511,10 +601,14 @@
  
  		switch( command )
  		{
@@ -275,7 +274,7 @@ Index: loginclif.c
  		// request client login (raw password)
  		case 0x0064: // S 0064 <version>.L <username>.24B <password>.24B <clienttype>.B
  		case 0x0277: // S 0277 <version>.L <username>.24B <password>.24B <clienttype>.B <ip address>.16B <adapter address>.13B
-@@ -526,6 +621,7 @@
+@@ -526,6 +620,7 @@
  		case 0x0825: // S 0825 <packetsize>.W <version>.L <clienttype>.B <userid>.24B <password>.27B <mac>.17B <ip>.15B <token>.(packetsize - 0x5C)B
  			next = logclif_parse_reqauth(fd,  sd, command, ip); 
  			break;
