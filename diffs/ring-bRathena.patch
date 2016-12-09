@@ -1,22 +1,24 @@
 Index: ipban.h
 ===================================================================
---- ipban.h	(revision 422)
+--- ipban.h	(revision 438)
 +++ ipban.h	(working copy)
-@@ -39,5 +39,8 @@
+@@ -38,6 +38,11 @@
+ 
  // parses configuration option
  bool ipban_config_read(const char *key, const char* value);
- #endif // BRATHENA_CORE
--
 +//Ring-0 
 +void update_last_data(const char* account_id, const char* hwid, const char* colun);
 +int ring_ban_check(char *hwid);
++char* CpyData(char *inputS, char* delS);
 +//
+ #endif // BRATHENA_CORE
+ 
  #endif /* LOGIN_IPBAN_H */
 Index: ipban_sql.c
 ===================================================================
---- ipban_sql.c	(revision 422)
+--- ipban_sql.c	(revision 438)
 +++ ipban_sql.c	(working copy)
-@@ -276,3 +276,51 @@
+@@ -276,3 +276,66 @@
  
  	return 0;
  }
@@ -68,33 +70,40 @@ Index: ipban_sql.c
 +
 +	SQL->FreeResult(sql_handle);
 +}
++
++
++char* CpyData(char *inputS, char* delS)
++{
++	char *st1 = inputS;
++	char* outS;
++	const char * delimeter = delS;
++	outS = strtok(st1, delimeter);
++	// Handle parsed 	
++	outS = strtok(NULL, delimeter);
++
++	if (outS == NULL) {return "Error";}
++
++	return outS;
++}
 \ No newline at end of file
 Index: login.c
 ===================================================================
---- login.c	(revision 422)
+--- login.c	(revision 438)
 +++ login.c	(working copy)
-@@ -40,6 +40,8 @@
+@@ -39,7 +39,7 @@
+ #include "common/strlib.h"
  #include "common/timer.h"
  #include "common/utils.h"
- 
+-
 +#include "ring.h"
-+
  #include <stdio.h>
  #include <stdlib.h>
  
-@@ -277,6 +279,8 @@
- 	WFIFOL(fd,6) = login_id1;
- 	WFIFOL(fd,10) = login_id2;
- 	WFIFOB(fd,14) = sex;
-+
-+
- 	if (node)
- 	{
- 		WFIFOB(fd,15) = 0;// ok
-@@ -295,6 +299,19 @@
+@@ -295,6 +295,19 @@
  		WFIFOL(fd,25) = 0;
  		WFIFOL(fd,29) = 0;
  	}
++
 +
 +		if (statusS != 0)
 +		{
@@ -107,46 +116,55 @@ Index: login.c
 +		WFIFOL(fd,29) = 0;
 +		}
 +
-+
  	memcpy(WFIFOP(fd,33), mac_address, MAC_LENGTH);
  	WFIFOSET(fd,33 + MAC_LENGTH);
  }
-@@ -1483,6 +1500,65 @@
+@@ -1483,6 +1496,73 @@
  	RFIFOSKIP(fd,18);
  }
  
 +
 +char *output;		
 +char trashA[20];
-+char ring_aut[150]="";
-+char *ringaut;
-+char macS[20];
-+char hwid[33];
-+char key[33];
++char ringautA[150];
++char ringautB[150];
++char ringautC[150];
++char* macS;
++char* hwid;
++char* key;
 +
-+static int ring_reqauth_mac(int fd, struct login_session_data *sd, int command, char* ip){
++static int ring_reqauth_mac(int fd, struct login_session_data *sd, int command, const char* ip){
 +		size_t packet_len = RFIFOREST(fd);
 +
 +
 +
 +		if (command == 0x41 || command == 0x42)
 +		{
-+		ringaut = (char *)RFIFOP(fd, 2);
++
++		safestrncpy(ringautA, (char *)RFIFOP(fd, 2),150);
++		safestrncpy(ringautB, (char *)RFIFOP(fd, 2),150);
++		safestrncpy(ringautC, (char *)RFIFOP(fd, 2),150);
++
++		macS = CpyData(ringautA,"#");
++		hwid = CpyData(ringautB,"$");
++		key = CpyData(ringautC,"@");
 +
 +
-+		strcpy(trashA, strtok(ringaut , "|"));
-+		strcpy(macS, strtok(NULL, "|"));
-+		strcpy(hwid, strtok(NULL, "|"));
-+		strcpy(key, strtok(NULL, "|"));	
 +
-+
++		if (key== NULL || macS == NULL || hwid == NULL) {return 9;}
++		
 +		output = strstr (key,CRC_RING);
++
 +		if (!output) {
 +			ShowStatus("Ring-0: Connection refused invalid key %s\n",key);
 +			return 9;
 +		} 
 +
 +		} 
++		
++
++
++		
 +
 +		//Start RING-0		
 +		update_last_data(sd->userid,macS,"mac");
@@ -159,50 +177,51 @@ Index: login.c
 +
 +		} else {
 +
-+		if (key== NULL) {return 5;}
-+		
-+		
++			
 +
 +		ShowStatus("Ring-0: Connection accepted from %s. MAC:%s , HWID: %s\n", sd->userid, macS, hwid);
 +		//end RING-0
 +		
 +		return 0;
 +		
-+		}	
++		}
++
++		
 +
 +}
-+
-+
 +
  bool login_parse_client_login(int fd, struct login_session_data* sd, const char *const ip) __attribute__((nonnull (2)));
  bool login_parse_client_login(int fd, struct login_session_data* sd, const char *const ip)
  {
-@@ -1496,8 +1572,14 @@
+@@ -1494,10 +1574,16 @@
+ 	int result;
+ 	uint16 command = RFIFOW(fd,0);
  	bool israwpass = (command==0x0064 || command==0x0277 || command==0x02b0 || command == 0x0825);
- 
+-
++	statusS = 9;
  	// Shinryo: For the time being, just use token as password.
 -	if(command == 0x0825)
--	{
-+		statusS = 9;
-+		if (command == 0x41 || command == 0x42)
-+		{
++	//Ring-0 packets
++	if (command == 0x41 || command == 0x42)
+ 	{
 +		statusS = ring_reqauth_mac(fd,  sd, command, ip);
 +		return true;
-+
-+		}else if(command == 0x0825)
-+		{
++	}
++	else if(command == 0x0825)
++	{
  		char *accname = (char *)RFIFOP(fd, 9);
  		char *token = (char *)RFIFOP(fd, 0x5C);
  		char *macaddress = (char *)RFIFOP(fd, 0x3c);
-@@ -1829,6 +1911,8 @@
- 		break;
+@@ -1827,7 +1913,8 @@
  
- 		// request client login (raw password)
+ 			login->parse_client_md5(fd, sd);
+ 		break;
+-
 +		case 0x41:
 +		case 0x42:
+ 		// request client login (raw password)
  		case 0x0064: // S 0064 <version>.L <username>.24B <password>.24B <clienttype>.B
  		case 0x0277: // S 0277 <version>.L <username>.24B <password>.24B <clienttype>.B <ip address>.16B <adapter address>.13B
- 		case 0x02b0: // S 02b0 <version>.L <username>.24B <password>.24B <clienttype>.B <ip address>.16B <adapter address>.13B <g_isGravityID>.B
 Index: ring.c
 ===================================================================
 --- ring.c	(nonexistent)
@@ -214,29 +233,11 @@ Index: ring.h
 ===================================================================
 --- ring.h	(nonexistent)
 +++ ring.h	(working copy)
-@@ -0,0 +1,25 @@
+@@ -0,0 +1,7 @@
 +//Ring-0	your crc_ring need lengt 32 characters - If it exceeds 32 characters delete the last characters until 32.
 +//d7d7da735c6d310f884558f2313aa457		
 +//d7da735c6d310f884558f2313aa457
 +//d7d7da735c6d310f884558f2313aa457
-+#define CRC_RING "f528764d624db129b32c21fbca0cb8d" //paste your CPT32 here <<<<<<
-+struct {
-+  char key[10];
-+} personA, person_copyA;
-+
-+struct {
-+  char macc[18];
-+} personB, person_copyB;
-+
-+struct {
-+  char hdid[33];
-+} personC, person_copyC;
-+
-+
-+struct {
-+  char keyzim[34];
-+} personD, person_copyD;
-+
-+
++#define CRC_RING "d7d7da735c6d310f884558f2313aa4" //paste your CPT32 here <<<<<<
 +int statusS;
 +
