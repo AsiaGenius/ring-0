@@ -27,7 +27,7 @@ Administrative Options
 - Part 2/5 Emu Diff : https://www.youtube.com/watch?v=NbofJJel6os
 - Part 3/5 Client Install: https://www.youtube.com/watch?v=010y_r4Gadc
 - Part 4/5 Key Generator: https://www.youtube.com/watch?v=tOTLyHrcL0E
-- Part 5/5 CRC PROTECT: https://www.youtube.com/watch?v=5UOUpRmJNwk
+- Part 5/5 CRC PROTECT: https://www.ringsec.net/guide/dash.php (new method)
 Done!
 
 View all guides: https://www.ringsec.net/guide
