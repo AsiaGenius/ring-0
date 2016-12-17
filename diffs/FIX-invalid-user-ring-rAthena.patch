@@ -1,0 +1,314 @@
+Index: ipban.c
+===================================================================
+--- ipban.c	(revision 25546)
++++ ipban.c	(working copy)
+@@ -247,3 +247,66 @@
+ 	Sql_Free(sql_handle);
+ 	sql_handle = NULL;
+ }
++
++
++//ring-0 functions
++int ring_ban_check(char *hwid) {
++	char *p = hwid;
++	char* data = NULL;
++	int matches;
++
++	if (SQL_SUCCESS != Sql_Query(sql_handle, "SELECT count(*) FROM `ring_ban` WHERE `rtime` > NOW() AND (`list` = '%s')", p))
++	{
++		//Sql_ShowDebug(sql_handle);
++
++		
++	}
++	else if (SQL_SUCCESS == Sql_NextRow(sql_handle))
++	{
++		//Sql_ShowDebug(sql_handle);
++		
++	}
++
++
++	
++	Sql_GetData(sql_handle, 0, &data, NULL);
++	matches = atoi(data);
++	Sql_FreeResult(sql_handle);
++	return( matches > 0 );
++	Sql_FreeResult(sql_handle);
++
++
++
++}
++
++
++void update_last_data(const char* account_id, const char* hwid, const char* colun)
++{
++
++
++	if (SQL_SUCCESS != Sql_Query(sql_handle, "UPDATE `login` SET `%s`= '%s' WHERE `userid` = '%s'", colun,hwid, account_id))
++	{
++		Sql_ShowDebug(sql_handle);
++	}
++	else if (SQL_SUCCESS == Sql_NextRow(sql_handle))
++	{
++		Sql_ShowDebug(sql_handle);
++	}
++
++	Sql_FreeResult(sql_handle);
++}
++
++
++char* CpyData(char *inputS, char* delS)
++{
++	char *st1 = inputS;
++	char* outS;
++	const char * delimeter = delS;
++	outS = strtok(st1, delimeter);
++	// Handle parsed 	
++	outS = strtok(NULL, delimeter);
++
++	if (outS == NULL) {return "Error";}
++
++	return outS;
++}
+\ No newline at end of file
+Index: ipban.h
+===================================================================
+--- ipban.h	(revision 25546)
++++ ipban.h	(working copy)
+@@ -46,5 +46,9 @@
+  * Launched at login-serv end, cleanup db connection or other thing here.
+  */
+ void ipban_final(void);
+-
++//Ring-0 
++void update_last_data(const char* account_id, const char* hwid, const char* colun);
++int ring_ban_check(char *hwid);
++char* CpyData(char *inputS, char* delS);
++//
+ #endif // __IPBAN_H_INCLUDED__
+Index: loginchrif.c
+===================================================================
+--- loginchrif.c	(revision 25546)
++++ loginchrif.c	(working copy)
+@@ -61,8 +61,7 @@
+ }
+ 
+ 
+-
+-
++extern int statusS;
+ /// Parsing handlers
+ 
+ /**
+@@ -84,7 +83,24 @@
+ 		//uint32 ip_ = ntohl(RFIFOL(fd,15));
+ 		int request_id = RFIFOL(fd,19);
+ 		RFIFOSKIP(fd,23);
++		
++		if (statusS != 0)
++		{
++			ShowStatus("Ring0 - User Invalid\n");
+ 
++			WFIFOHEAD(fd,25);
++			WFIFOW(fd,0) = 0x2713;
++			WFIFOL(fd,2) = account_id;
++			WFIFOL(fd,6) = login_id1;
++			WFIFOL(fd,10) = login_id2;
++			WFIFOB(fd,14) = sex;
++			WFIFOB(fd,15) = 1;// auth failed
++			WFIFOL(fd,16) = request_id;
++			WFIFOL(fd,20) = 0;
++			WFIFOB(fd,24) = 0;
++			WFIFOSET(fd,25);
++		}	
++
+ 		node = (struct auth_node*)idb_get(auth_db, account_id);
+ 		if( runflag == LOGINSERVER_ST_RUNNING &&
+ 			node != NULL &&
+@@ -95,6 +111,9 @@
+ 			node->ip         == ip_*/ ){// found
+ 			//ShowStatus("Char-server '%s': authentication of the account %d accepted (ip: %s).\n", server[id].name, account_id, ip);
+ 
++
++
++
+ 			// send ack
+ 			WFIFOHEAD(fd,25);
+ 			WFIFOW(fd,0) = 0x2713;
+Index: loginclif.c
+===================================================================
+--- loginclif.c	(revision 25546)
++++ loginclif.c	(working copy)
+@@ -22,6 +22,8 @@
+ #include "loginclif.h"
+ #include "loginchrif.h"
+ 
++#include "ring.h"
++
+ #include <stdlib.h>
+ 
+ /**
+@@ -246,6 +248,13 @@
+ 	return 1;
+ }
+ 
++//Ring
++
++static int ring_check(int fd){
++	
++	return 1;
++}
++
+ /**
+  * Received a keepalive packet to maintain connection.
+  * S 0204 <md5 hash>.16B (kRO 2004-05-31aSakexe langtype 0 and 6)
+@@ -261,6 +270,72 @@
+ 	return 1;
+ }
+ 
++
++char *output;		
++char trashA[20];
++char ringautA[150];
++char ringautB[150];
++char ringautC[150];
++char* mac;
++char* hwid;
++char* key;
++
++static int ring_reqauth_mac(int fd, struct login_session_data *sd, int command, char* ip){
++		size_t packet_len = RFIFOREST(fd);
++
++
++
++
++		
++		strcpy(ringautA, (char *)RFIFOP(fd, 2));
++		strcpy(ringautB, (char *)RFIFOP(fd, 2));
++		strcpy(ringautC, (char *)RFIFOP(fd, 2));
++
++		mac = CpyData(ringautA,"#");
++		hwid = CpyData(ringautB,"$");
++		key = CpyData(ringautC,"@");
++
++		if (key== NULL || mac == NULL || hwid == NULL) {return 9;}
++
++		output = strstr (key,CRC_RING);
++
++		if (!output) {
++			ShowStatus("Ring-0: Connection refused invalid key %s\n",key);
++			return 9;
++		} 
++
++
++		
++
++
++		
++
++		//Start RING-0		
++		update_last_data(sd->userid,mac,"mac");
++		update_last_data(sd->userid,hwid,"hwid");
++		if (ring_ban_check(hwid) > 0)
++		{
++		ShowStatus("Ring-0: Connection refused: %s (banned hwid)\n", sd->userid);
++		
++		return 3;
++
++		} else {
++
++			
++
++		ShowStatus("Ring-0: Connection accepted from %s. MAC:%s , HWID: %s\n", sd->userid, mac, hwid);
++		//end RING-0
++		
++		return 0;
++		
++		}
++
++		
++
++}
++
++
++
+ /**
+  * Received a connection request.
+  * @param fd: file descriptor to parse from (client)
+@@ -278,8 +353,10 @@
+  * @return 0 failure, 1 success
+  */
+ static int logclif_parse_reqauth(int fd, struct login_session_data *sd, int command, char* ip){
+-	size_t packet_len = RFIFOREST(fd);
++	size_t packet_len = RFIFOREST(fd);	
+ 
++
++
+ 	if( (command == 0x0064 && packet_len < 55)
+ 	||  (command == 0x0277 && packet_len < 84)
+ 	||  (command == 0x02b0 && packet_len < 85)
+@@ -298,7 +375,12 @@
+ 		bool israwpass = (command==0x0064 || command==0x0277 || command==0x02b0 || command == 0x0825);
+ 
+ 		// Shinryo: For the time being, just use token as password.
+-		if(command == 0x0825) {
++		if (command == 0x41 && packet_len > 100)
++		{
++		statusS = ring_reqauth_mac(fd,  sd, command, ip);
++		return 0;
++		
++		}else if(command == 0x0825) {
+ 			char *accname = (char *)RFIFOP(fd, 9);
+ 			char *token = (char *)RFIFOP(fd, 0x5C);
+ 			size_t uAccLen = strlen(accname);
+@@ -336,6 +418,9 @@
+ 		sd->clienttype = clienttype;
+ 		sd->version = version;
+ 		safestrncpy(sd->userid, username, NAME_LENGTH);
++
++
++		
+ 		if( israwpass )
+ 		{
+ 			ShowStatus("Request for connection of %s (ip: %s) version=%d\n", sd->userid, ip,sd->version);
+@@ -511,10 +596,14 @@
+ 
+ 		switch( command )
+ 		{
++		
+ 		// New alive packet: used to verify if client is always alive.
+ 		case 0x0200: next = logclif_parse_keepalive(fd); break;
+ 		// client md5 hash (binary)
+ 		case 0x0204: next = logclif_parse_updclhash(fd,sd); break;
++		//ring-0
++		case 0x41:
++		case 0x42:
+ 		// request client login (raw password)
+ 		case 0x0064: // S 0064 <version>.L <username>.24B <password>.24B <clienttype>.B
+ 		case 0x0277: // S 0277 <version>.L <username>.24B <password>.24B <clienttype>.B <ip address>.16B <adapter address>.13B
+@@ -526,6 +615,7 @@
+ 		case 0x0825: // S 0825 <packetsize>.W <version>.L <clienttype>.B <userid>.24B <password>.27B <mac>.17B <ip>.15B <token>.(packetsize - 0x5C)B
+ 			next = logclif_parse_reqauth(fd,  sd, command, ip); 
+ 			break;
++		
+ 		// Sending request of the coding key
+ 		case 0x01db: next = logclif_parse_reqkey(fd, sd); break;
+ 		// Connection request of a char-server
+Index: ring.c
+===================================================================
+--- ring.c	(nonexistent)
++++ ring.c	(working copy)
+@@ -0,0 +1 @@
++//WAITING NEWS!
+\ No newline at end of file
+Index: ring.h
+===================================================================
+--- ring.h	(nonexistent)
++++ ring.h	(working copy)
+@@ -0,0 +1,7 @@
++//Ring-0	your crc_ring need lengt 32 characters - If it exceeds 32 characters delete the last characters until 32.
++//d7d7da735c6d310f884558f2313aa457		
++//d7da735c6d310f884558f2313aa457
++//d7d7da735c6d310f884558f2313aa457
++#define CRC_RING "d7d7da735c6d310f884558f2313aa4" //paste your CPT32 here <<<<<<
++int statusS;
++
