@@ -1,0 +1,102 @@
+//		|-----------------------------------------------------------------------------
+//		|Criado por: Butcher (http://forum.brathena.org/index.php/user/6341-butcher/)
+//		|Versão: 1.0
+//		|Site Ring-0: https://ringsec.net/
+//		|-----------------------------------------------------------------------------
+//		|Descrição: 
+//		|- Comando para banir e desbanir jogadores utilizando a tabela "ring_ban".
+//		|- Utilize @ringban para acessar o menu.
+//		|- Necessário possuir o Ring-0 instalado para funcionar.
+//		|-----------------------------------------------------------------------------
+//		|Changelog:
+//		|1.0 - Script Criado [Butcher]
+//		|-----------------------------------------------------------------------------
+
+-	script	ring_menu	-1,{
+
+OnInit:
+
+// Configuracoes
+
+set .lvlmin,80;    // Grupo minimo para utilizar o comando
+set .comandoban$,"ringban";	// Nome do comando
+set .motivo$, "Uso de Hack";	// Motivo padrao
+set .dias, 365;	// Dias de banimento padrao
+set .banaccount, 1;	// Utilizar @ban para banir a conta? 1: yes | 0: no [default 1]
+set .unbanaccount, 0;	// Utilizar @unban para desbanir a conta? 1: yes | 0: no [default 0]
+set .gmname, 1;	// Adicionar o nick de quem deu o ban no motivo? 1: yes | 0: no [default 1]
+
+// Fim - Configuracoes
+
+bindatcmd .comandoban$,"ring_menu::OnRingBan",.lvlmin,1;
+end;
+
+OnRingBan:
+	while(true){
+	mes "^FF0000[Ring-0 Menu]^000000";
+	mes "Nick: ^0000FF" + .nick$ + "^000000";
+	mes "Dias: ^0000FF" + .dias + "^000000";
+	mes "Motivo: ^0000FF" + .motivo$ + "^000000";
+	next;
+			select("Nick:Dias:Motivo:^FF0000Banir^000000:^008B00Desbanir^000000:Sair");
+			switch(@menu){
+				case 1: input(.nick$); break;
+				case 2: input(.dias); break;
+				case 3: input(.motivo$); break; break;
+				case 4: 
+				if(.gmname == 1){
+				.motivoban$ = strcharinfo(0) + " : " + .motivo$;
+				}
+				else{
+				.motivoban$ = .motivo$;
+				}
+				callfunc ("Banir",.nick$,.dias,.motivoban$,.banaccount); 
+				break;
+				case 5: callfunc ("Desbanir",.nick$,.unbanaccount); break;
+				case 6: close;
+						}
+					}		
+}
+
+// Busca o HWID da conta informada
+function	script	BuscaHWID	{
+query_sql "SELECT account_id FROM `char` WHERE name = '" + escape_sql(getarg(0)) + "'",.@id$;
+query_sql "SELECT hwid FROM login WHERE account_id = " + .@id$, .@hwid$;
+return .@hwid$;
+}
+
+
+// Realiza o banimento do hwid
+function	script	Banir	{
+.@acc_hwid$ = callfunc ("BuscaHWID", getarg(0));
+	if (.@acc_hwid$ == ""){
+	dispbottom "HWID não encontrado, verique o nome do jogador.";
+	end;
+						}
+	else{
+	query_sql "INSERT INTO ring_ban VALUES ('" + .@acc_hwid$ + "' , NOW() , CURRENT_DATE + INTERVAL " + getarg(1) + " DAY , '" + escape_sql(getarg(2)) + "' )";
+		if(getarg(3) == 1){
+		atcommand "@ban " + getarg(1) + "d " + getarg(0);
+		}
+	dispbottom "Jogador banido";
+	return;
+		}
+}
+
+// Realiza o desbanimento do hwid
+function	script	Desbanir	{
+.@acc_hwid$ = callfunc ("BuscaHWID", getarg(0));
+	if (.@acc_hwid$ == ""){
+	dispbottom "HWID não encontrado, verique o nome do jogador.";
+	end;
+						}
+	else{
+	query_sql "DELETE FROM ring_ban where list = '" + .@acc_hwid$ + "'";
+		if(getarg(1) == 1){
+		atcommand "@unban " + getarg(0);
+		}
+	dispbottom "Jogador desbanido";
+	return;
+	}
+}
+
