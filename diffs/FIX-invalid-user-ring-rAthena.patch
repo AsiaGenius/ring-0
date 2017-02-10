@@ -103,6 +103,7 @@ Index: loginchrif.c
  		//uint32 ip_ = ntohl(RFIFOL(fd,15));
  		int request_id = RFIFOL(fd,19);
  		RFIFOSKIP(fd,23);
+
 +		
 +		if (statusS != 0)
 +		{
@@ -251,6 +252,7 @@ Index: loginclif.c
  
  		// Shinryo: For the time being, just use token as password.
 -		if(command == 0x0825) {
++		 statusS = 9;
 +		if (command == 0x41 && packet_len > 100)
 +		{
 +		statusS = ring_reqauth_mac(fd,  sd, command, ip);
