@@ -20,6 +20,7 @@ Administrative Options
 - Full Compatibility: rAthena, Hercules, bRathena, Cronus, eAMod, rAmod. Windows XP, Windows 7, Windows 8, Windows 9 ...
 - Fast Support
 
+Note: New official dashboard set. The old one was discontinued. - 12-02-2017
 
 # How to install?
 
