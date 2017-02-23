@@ -37,6 +37,6 @@ View all guides: https://www.ringsec.net/guide
 
 Support channel: https://discord.gg/EKPPvxc
 
-Enjoy!
+Enjoy!!
 
 Done? Okay. :)
