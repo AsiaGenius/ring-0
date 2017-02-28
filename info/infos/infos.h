@@ -3,6 +3,7 @@ class CARREGAR
 public:
 	
 	char* UserIP;
+	char* Key;
 	char* UserHex;
 	int MaxAllowedInstances;
 	int NumberOfPrt;
