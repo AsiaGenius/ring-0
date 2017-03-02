@@ -4,6 +4,7 @@ public:
 	
 	char* UserIP;
 	char* Key;
+	char* pass;
 	char* UserHex;
 	int MaxAllowedInstances;
 	int NumberOfPrt;

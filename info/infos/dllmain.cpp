@@ -18,10 +18,11 @@ void loadConf()
 //////////////////////////////////////////////////////////////////////////
 // Connection and Client Config	///////	RING-0		//////////////////////
 //////////////////////////////////////////////////////////////////////////
-carrega.Key = "-Ke3gCeZsy2bm2p6hRmR";
-carrega.UserIP = "158.69.25.150";	//you server IP
-carrega.UserHex =  "legendro.exe";	//hexed name
-carrega.MaxAllowedInstances =  2;	//Number of max game client, MAX: 99 (Recomended: 2)
+carrega.Key = "YAUTYyuTUASYDTYuYUSTDYUAtyuSYUD";			//your general ID
+carrega.pass	= "-JShJSDHAKJSDHjKSD";				//Server Pass (include "-" )
+carrega.UserIP = "127.0.0.1";						//you server IP
+carrega.UserHex =  "myro.exe";						//hexed name
+carrega.MaxAllowedInstances =  2;						//Number of max game client, MAX: 99 (Recomended: 2)
 
 
 
@@ -45,6 +46,12 @@ __declspec(dllexport) char* GetKey(void)
 {
 	loadConf();
     return carrega.Key;
+}
+
+__declspec(dllexport) char* GetPass(void)
+{
+	loadConf();
+    return carrega.pass;
 }
 
 __declspec(dllexport) int getinst()
