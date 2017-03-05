@@ -29,6 +29,9 @@ Note: New official dashboard set. The old one was discontinued. - 12-02-2017
 - Part 3/5 Client Install: https://www.youtube.com/watch?v=010y_r4Gadc
 - Part 4/5 Key Generator: https://www.youtube.com/watch?v=tOTLyHrcL0E
 - Part 5/5 CRC PROTECT: https://www.ringsec.net/guide/dash.php (new method)
+
+- Easy install using NEMO! https://youtu.be/0WEJ1rn5VjM
+
 Done!
 
 View all guides: https://www.ringsec.net/guide
