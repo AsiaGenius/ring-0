@@ -1,7 +1,0 @@
-;MOLEBOX CONFIG SCRIPT 1.0
-<options>
-target=Test\apishow.exe
-source=apishow.exe
-isexecutable=yes
-<files>
-<end>
