@@ -28,6 +28,8 @@ Note: New official dashboard set. The old one was discontinued. - 12-02-2017
 
 # How to install?
 
+# Installing RingSec in 6 min: https://www.youtube.com/watch?v=1bOJs-SFGtI
+
 - Part 1/5 Mysql Install : https://www.youtube.com/watch?v=AhuyBS6DfPE
 - Part 2/5 Emu Diff : https://www.youtube.com/watch?v=NbofJJel6os
 - Part 3/5 Client Install: https://www.youtube.com/watch?v=010y_r4Gadc
